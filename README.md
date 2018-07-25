@@ -5,7 +5,6 @@ The simplest immutable supply chain management
 
     GET /hash => HTTP 200 ...document
     GET /next/hash1 => HTTP 301 /hash2
-    GET /prev/hash1 = HTTP 301 /hash2
     GET /next/ => HTTP 301 /epoch-hash
 
 # Headers for /hashX
@@ -15,7 +14,7 @@ The simplest immutable supply chain management
     X-Next-Hash: <hash> (if known)
     X-Block: <int64> (0..)
     X-Date: <int64>:<int64> (UTC unix epoch in seconds:nanoseconds, mandatory)
-    X-Nonce: <string 0-160 chars> (mandatory)
+    X-Nonce: <string 0-160 chars> (optional ?)
     X-Content-Hash: <hash> (mandatory)
     X-Sign: <string> (mandatory)
 
