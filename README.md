@@ -18,8 +18,13 @@ The simplest immutable supply chain management
     X-Content-Hash: <hash> (mandatory)
     X-Sign: <string> (mandatory)
 
-hashX is the hash of (X-Prev-Hash + X-Block + X-Date + X-Nonce + X-Content-Hash)
 X-Sign must be valid for hashX
+
+hashX is the hash of (X-Prev-Hash + X-Block + X-Date + X-Nonce + X-Content-Hash),
+where "+" means concatenation of strings,
+X-Prev-Hash, X-Nonce, X-Content-Hash are printed in hex,
+X-Block is a decimal
+X-Date is a decimal:decimal, just like in the header
 
 # Helpful commands
 
