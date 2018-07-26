@@ -18,10 +18,9 @@ func shaSign(data []byte) ([]byte, error) {
 }
 
 func run() error {
-	bl := chainy.Blocks{}
-	bl.Signer = shaSign
+	bl := chainy.New(shaSign, nil)
 
-	err := bl.AppendNew([]byte("first"), time.Now().UTC(), "")
+	_, err := bl.AppendNew([]byte("first"), time.Now().UTC(), "", nil)
 	if err != nil {
 		return err
 	}
