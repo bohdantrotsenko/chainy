@@ -20,7 +20,7 @@ func shaSign(data []byte) ([]byte, error) {
 func run() error {
 	bl := chainy.New(shaSign, nil)
 
-	_, err := bl.AppendNew([]byte("first"), time.Now().UTC(), "", nil)
+	_, err := bl.AppendNew([]byte("first"), time.Now().UTC(), nil)
 	if err != nil {
 		return err
 	}

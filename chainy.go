@@ -20,7 +20,7 @@ type Entry struct {
 	Instant     time.Time
 	Height      int
 	PrevHash    []byte
-	Nonce       string
+	NextHash    []byte
 	ContentHash []byte
 	Content     []byte
 	Signature   []byte
@@ -28,13 +28,16 @@ type Entry struct {
 
 // Hash computes the reference hash for the entry.
 func (e *Entry) Hash() []byte {
+	if e == nil {
+		return make([]byte, 0)
+	}
 	if e.Instant.Location() != time.UTC {
 		panic("time must be in UTC()") // that's a bit bold, but anyway
 	}
 	// TODO: cache the computation
 	sec := e.Instant.Unix()
 	nano := e.Instant.Nanosecond()
-	digest := sha256.Sum256([]byte(fmt.Sprintf("%x%d%d:%d%x%x", e.PrevHash, e.Height, sec, nano, e.Nonce, e.ContentHash)))
+	digest := sha256.Sum256([]byte(fmt.Sprintf("%x%d%d:%d%x", e.PrevHash, e.Height, sec, nano, e.ContentHash)))
 	return digest[:]
 }
 
@@ -117,7 +120,7 @@ func New(signer SignerFunc, verifier VerifierFunc) *Blocks {
 }
 
 // AppendNew creats and appends an entry to the blockchain.
-func (b *Blocks) AppendNew(content []byte, instant time.Time, nonce string, signIfKnown []byte) (*Entry, error) {
+func (b *Blocks) AppendNew(content []byte, instant time.Time, signIfKnown []byte) (*Entry, error) {
 	instant = instant.UTC()
 	b.Lock()
 	defer b.Unlock()
@@ -131,7 +134,6 @@ func (b *Blocks) AppendNew(content []byte, instant time.Time, nonce string, sign
 		Instant:     instant,
 		Height:      len(b.Entries),
 		PrevHash:    b.lastHash(),
-		Nonce:       nonce,
 		ContentHash: contentDigest[:],
 		Content:     clone(content),
 	}
@@ -154,6 +156,10 @@ func (b *Blocks) AppendNew(content []byte, instant time.Time, nonce string, sign
 			return nil, err
 		}
 		newEntry.Signature = signature
+	}
+
+	if len(b.Entries) > 0 {
+		b.last().NextHash = hash
 	}
 
 	b.idxmap[fmt.Sprintf("%x", hash)] = len(b.Entries)

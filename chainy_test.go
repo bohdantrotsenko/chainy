@@ -25,7 +25,7 @@ func shaVerify(hash []byte, sign []byte) bool {
 func TestChain(t *testing.T) {
 	bl := chainy.New(shaSign, nil)
 	inst := time.Unix(1500123123, 0)
-	entry, err := bl.AppendNew([]byte("test"), inst, "", nil)
+	entry, err := bl.AppendNew([]byte("test"), inst, nil)
 	assert.Nil(t, err, "no error appending an entry")
 	assert.NotNil(t, entry)
 }
@@ -33,13 +33,13 @@ func TestChain(t *testing.T) {
 func TestReplay(t *testing.T) {
 	bl1 := chainy.New(shaSign, nil)
 	inst := time.Unix(1500123123, 0)
-	_, err := bl1.AppendNew([]byte("test"), inst, "", nil)
+	_, err := bl1.AppendNew([]byte("test"), inst, nil)
 	assert.Nil(t, err, "no error appending an entry")
 
 	entry := bl1.Entries[0]
 
 	bl2 := chainy.New(nil, shaVerify)
-	eTest, err := bl2.AppendNew([]byte("test"), inst, "", entry.Signature)
+	eTest, err := bl2.AppendNew([]byte("test"), inst, entry.Signature)
 	assert.Nil(t, err, "no error appending a known entry")
 	assert.NotNil(t, eTest)
 }
@@ -51,7 +51,7 @@ func TestWaitFirst(t *testing.T) {
 	errChan := make(chan error, 1)
 	go func() {
 		time.Sleep(3 * time.Millisecond)
-		_, er := bl.AppendNew([]byte("test"), inst, "", nil)
+		_, er := bl.AppendNew([]byte("test"), inst, nil)
 		errChan <- er
 	}()
 
@@ -94,7 +94,7 @@ func TestWaitFirstNTimes(t *testing.T) {
 	}
 
 	time.Sleep(3 * time.Millisecond)
-	_, err := bl.AppendNew([]byte("test"), inst, "", nil)
+	_, err := bl.AppendNew([]byte("test"), inst, nil)
 	assert.Nil(t, err, "no error appending an entry")
 
 	for i := 0; i < N; i++ {
@@ -108,13 +108,13 @@ func TestWaitSecond(t *testing.T) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second)
 	defer ctxCancel()
 
-	first, err := bl.AppendNew([]byte("first"), time.Unix(1500123000, 0), "", nil)
+	first, err := bl.AppendNew([]byte("first"), time.Unix(1500123000, 0), nil)
 	assert.Nil(t, err, "no error creating first entry")
 
 	errChan := make(chan error, 1)
 	go func() {
 		time.Sleep(3 * time.Millisecond)
-		_, er := bl.AppendNew([]byte("second"), time.Unix(1500123000, 0), "", nil)
+		_, er := bl.AppendNew([]byte("second"), time.Unix(1500123000, 0), nil)
 		errChan <- er
 	}()
 
