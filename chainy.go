@@ -1,7 +1,6 @@
 package chainy
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -45,6 +44,7 @@ type VerifierFunc func(hash []byte, sign []byte) bool
 // Blocks are the "chain".
 type Blocks struct {
 	Entries []Entry
+	idxmap  map[string]int
 
 	Signer   SignerFunc
 	Verifier VerifierFunc
@@ -74,17 +74,8 @@ func (b *Blocks) WaitForNext(ctx context.Context, hash []byte) (*Entry, error) {
 		}
 	}
 
-	var cursor *Entry
-	var curIdx int
-	for idx, el := range b.Entries {
-		if bytes.Equal(hash, el.Hash()) { // TODO: optimize via map
-			cursor = &el
-			curIdx = idx
-			break
-		}
-	}
-
-	if cursor == nil {
+	curIdx, found := b.idxmap[fmt.Sprintf("%x", hash)]
+	if !found {
 		b.RUnlock()
 		return nil, ErrEntryNotFound
 	}
@@ -104,8 +95,25 @@ func (b *Blocks) WaitForNext(ctx context.Context, hash []byte) (*Entry, error) {
 	}
 }
 
+// Get returns an entry by its hash.
+func (b *Blocks) Get(hash []byte) (*Entry, error) {
+	b.RLock()
+	defer b.RUnlock()
+
+	idx, found := b.idxmap[fmt.Sprintf("%x", hash)]
+	if !found {
+		return nil, ErrEntryNotFound
+	}
+
+	return &b.Entries[idx], nil
+}
+
+// New creates a blockchain.
 func New(signer SignerFunc, verifier VerifierFunc) *Blocks {
-	return &Blocks{Signer: signer, Verifier: verifier, modified: make(chan struct{})}
+	return &Blocks{Signer: signer, Verifier: verifier,
+		modified: make(chan struct{}),
+		idxmap:   make(map[string]int),
+	}
 }
 
 // AppendNew creats and appends an entry to the blockchain.
@@ -148,11 +156,23 @@ func (b *Blocks) AppendNew(content []byte, instant time.Time, nonce string, sign
 		newEntry.Signature = signature
 	}
 
+	b.idxmap[fmt.Sprintf("%x", hash)] = len(b.Entries)
 	b.Entries = append(b.Entries, newEntry)
+
 	close(b.modified)
 	b.modified = make(chan struct{})
 
 	return b.last(), nil
+}
+
+// Last returns the last entry in the blockchain.
+func (b *Blocks) Last() *Entry {
+	b.RLock()
+	defer b.RUnlock()
+	if len(b.Entries) == 0 {
+		return nil
+	}
+	return b.last()
 }
 
 func (b *Blocks) last() *Entry {
